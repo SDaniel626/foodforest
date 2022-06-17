@@ -1,0 +1,75 @@
+# Use root/example as user/password credentials
+version: '3.1'
+
+services:
+
+  backend:
+    build: 
+      dockerfile: Dockerfile
+      context: ./backend
+    environment:
+      MYSQL_HOST: '${MYSQL_HOST}'
+      MYSQL_PORT: '${MYSQL_PORT}'
+      MYSQL_USERNAME: '${MYSQL_USERNAME}'
+      MYSQL_PASSWORD: '${MYSQL_PASSWORD}'
+      MYSQL_DATABASE: '${MYSQL_DATABASE}'
+      PORT: '${BACKEND_PORT}'
+      SECRET: '${SECRET}'
+    networks:
+      - foodforest
+    ports:
+      - '127.0.0.1:${BACKEND_PORT}:${BACKEND_PORT}'
+    depends_on:
+      db:
+        condition: service_healthy
+
+  frontend:
+    build: 
+      dockerfile: Dockerfile
+      context: .
+    environment:
+      PORT: '${FRONTEND_PORT}'
+      BACKEND_PORT: '${BACKEND_PORT}'
+      BACKEND_HOST: '${BACKEND_HOST}'
+    networks:
+      - foodforest
+    ports:
+      - '127.0.0.1:${FRONTEND_PORT}:${FRONTEND_PORT}'
+    depends_on:
+      - backend
+
+  db:
+    image: mysql
+    command: --default-authentication-plugin=mysql_native_password
+    networks: 
+       - foodforest
+    volumes:
+       - ./dbdump:/docker-entrypoint-initdb.d
+       - mysql-data:/var/lib/mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+    ports:
+       - 127.0.0.1:${MYSQL_PORT}:${MYSQL_PORT}
+    healthcheck:
+      test: ["CMD", "mysqladmin" ,"ping", "-h", "localhost"]
+      timeout: 10s
+      retries: 10
+
+  phpmyadmin:
+    image: phpmyadmin
+    networks:
+       - foodforest
+    ports:
+      - 127.0.0.1:8080:80
+    depends_on:
+      - db
+
+networks:
+  foodforest:
+    driver: bridge
+volumes:
+  mysql-data:
+    driver: local
+
+

@@ -1,0 +1,6 @@
+<h2>Partners: </h2>
+<div *ngIf="partners" class="card-deck row row-cols-4">
+    <div *ngFor="let partner of partners">
+        <app-partner [partner]="partner" ></app-partner>
+    </div>
+</div>
